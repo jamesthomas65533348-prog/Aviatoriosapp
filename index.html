@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Aviator Genius - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --ios-blue: #007aff; 
+            --ios-red: #ff3b30;
+            --ios-green: #34c759;
+            --ios-dark: #000000;
+            --island-bg: #000000;
+            --card-glass: rgba(28, 28, 30, 0.7);
+            --gold: #fbbf24;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; box-sizing: border-box; }
+
+        body { 
+            background: var(--ios-dark);
+            color: white; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
+            margin: 0; padding: 0; overflow: hidden; height: 100vh;
+            background-image: radial-gradient(circle at 50% -20%, #1c1c1e 0%, #000 70%);
+        }
+
+        /* --- MAINTENANCE OVERLAY --- */
+        #m-overlay {
+            position: fixed; inset: 0; background: #000;
+            z-index: 30000; display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; backdrop-filter: blur(20px);
+        }
+
+        /* --- BOUNCY ANIMATIONS --- */
+        @keyframes springIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .bouncy { transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+        .bouncy:active { transform: scale(0.85); opacity: 0.8; }
+        
+        .squish { transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .squish:active { transform: scale(0.95); }
+
+        /* --- DYNAMIC ISLAND --- */
+        .island-wrapper {
+            position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; width: 100%; display: flex; justify-content: center;
+        }
+
+        .dynamic-island {
+            width: 120px; height: 35px; background: var(--island-bg);
+            border-radius: 40px; transition: all 0.5s cubic-bezier(0.32, 1, 0.24, 1);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; padding: 0 15px; cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .dynamic-island.expanded { width: 300px; height: 80px; border-radius: 35px; }
+        .dynamic-island.locked { cursor: default; }
+
+        .island-content { display: flex; gap: 25px; opacity: 0; transition: 0.3s; pointer-events: none; width: 100%; justify-content: space-around; }
+        .dynamic-island.expanded .island-content { opacity: 1; pointer-events: auto; }
+        
+        .island-item { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #8e8e93; font-size: 10px; font-weight: 600; text-decoration: none; }
+        .island-item i { font-size: 20px; color: white; }
+
+        /* --- MODALS --- */
+        .ios-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); display: none; justify-content: center; align-items: center; z-index: 20000; padding: 20px; }
+        .ios-alert { 
+            background: #1c1c1e; border-radius: 24px; width: 280px; text-align: center; padding: 25px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            animation: springIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .alert-btn { margin-top: 15px; border: none; padding: 14px; width: 100%; border-radius: 14px; font-weight: 600; font-size: 15px; }
+        .btn-primary { background: var(--ios-blue); color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.05); color: white; }
+        .btn-danger { background: var(--ios-red); color: white; }
+
+        /* --- UI COMPONENTS --- */
+        .guest-bar { display: none; position: fixed; top: 65px; width: 100%; padding: 10px 20px; justify-content: space-between; align-items: center; z-index: 1000; }
+        .btn-guest { padding: 8px 18px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; }
+
+        .dash-container { padding: 110px 20px 20px; height: 100vh; overflow-y: auto; }
+        .welcome-section { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
+        .user-pill { display: flex; align-items: center; gap: 12px; }
+        
+        .avatar-circle { 
+            width: 52px; height: 52px; border-radius: 50%; border: 2.5px solid var(--ios-blue); 
+            overflow: hidden; display: flex; align-items: center; justify-content: center; background: #1c1c1e;
+        }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .balance-card { background: linear-gradient(135deg, #1c1c1e, #000); border-radius: 30px; padding: 25px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .action-item { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .action-icon { width: 60px; height: 60px; border-radius: 20px; background: rgba(255,255,255,0.06); display: flex; justify-content: center; align-items: center; font-size: 24px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
+
+        .game-row { background: var(--card-glass); backdrop-filter: blur(20px); border-radius: 24px; padding: 20px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px; }
+        .game-img { width: 55px; height: 55px; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 28px; }
+        
+        /* --- NOTIFICATION ITEMS --- */
+        .notif-item { 
+            background: rgba(255,255,255,0.05); 
+            padding: 18px; 
+            border-radius: 22px; 
+            margin-bottom: 15px; 
+            position: relative; 
+            overflow: hidden; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            transition: transform 0.3s;
+            touch-action: pan-y;
+        }
+        .notif-img { width: 100%; height: 140px; border-radius: 12px; object-fit: cover; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); cursor: zoom-in; }
+
+        /* --- FULL VIEW IMAGE --- */
+        #imageFullView {
+            position: fixed; inset: 0; background: #000; z-index: 30000; display: none;
+            justify-content: center; align-items: center;
+        }
+    </style>
+</head>
+<body onclick="handleGlobalClick(event)">
+
+    <div id="m-overlay">
+        <h2 style="margin:0;">SYSTEM UPDATE</h2>
+        <p style="opacity:0.6; font-size:0.9rem;">Maintenance in progress...</p>
+        <div id="m-timer" style="font-size: 3rem; font-weight: 800; margin: 20px 0;">05</div>
+    </div>
+
+    <div id="imageFullView" onclick="this.style.display='none'">
+        <img id="fullImgTarget" style="max-width: 95%; max-height: 90%; border-radius: 10px;">
+        <div style="position: absolute; top: 40px; right: 20px; font-size: 30px;"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+
+    <div class="island-wrapper">
+        <div class="dynamic-island" id="island" onclick="event.stopPropagation(); toggleIsland()">
+            <div class="island-content">
+                <a href="support.html" class="island-item bouncy">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span>Help</span>
+                </a>
+                <a href="bonus.html" class="island-item bouncy">
+                    <i class="fa-solid fa-bolt" style="color:#ffd60a"></i>
+                    <span>Signals</span>
+                </a>
+                <div class="island-item bouncy" onclick="showLogoutConfirm()">
+                    <i class="fa-solid fa-power-off" style="color:var(--ios-red)"></i>
+                    <span>Exit</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-bar" id="guestBar">
+        <h3 style="margin:0; font-size:18px;" class="squish">Guest Pilot</h3>
+        <div>
+            <button class="btn-guest btn-login bouncy" onclick="location.href='login.html'">Login</button>
+            <button class="btn-guest btn-signup bouncy" onclick="location.href='signup.html'">Join</button>
+        </div>
+    </div>
+
+    <div class="dash-container">
+        
+        <div class="welcome-section">
+            <div class="user-pill bouncy" onclick="handleProfileNav()">
+                <div class="avatar-circle">
+                    <img id="u-avatar" src="https://ui-avatars.com/api/?name=G&background=007aff&color=fff">
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #8e8e93; font-weight: 600; text-transform: uppercase;">Good day,</div>
+                    <div style="font-size: 19px; font-weight: 800;" id="u-name">Guest Mode</div>
+                </div>
+            </div>
+            
+            <div style="display:flex; align-items:center;">
+                <div id="admin-gate" class="bouncy" onclick="location.href='admin-shield.html'" style="background: rgba(251, 191, 36, 0.1); border: 1px solid var(--gold); color: var(--gold); padding: 6px 12px; border-radius: 50px; font-size: 11px; font-weight: 800; display: none; margin-right: 10px;">
+                    <i class="fa-solid fa-shield-halved"></i> ADMIN
+                </div>
+                <div class="notif-btn bouncy" style="font-size:22px; position: relative;" onclick="openNotif()">
+                    <i class="fa-solid fa-bell"></i>
+                    <div id="notif-dot" style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: var(--ios-red); border-radius: 50%; border: 2px solid #000; display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="balance-card squish" id="balCard">
+            <div style="font-size: 13px; color: #8e8e93; font-weight: 600;">AVAILABLE BALANCE</div>
+            <div style="font-size: 34px; font-weight: 800; margin-top: 5px;">₦<span id="balance">0.00</span></div>
+        </div>
+
+        <div class="action-grid" id="mainActions">
+            <div class="action-item bouncy" onclick="nav('deposit.html')">
+                <div class="action-icon" style="color:var(--ios-green)"><i class="fa-solid fa-plus"></i></div>
+                <span style="font-size:12px; font-weight: 600;">Deposit</span>
+            </div>
+            <div class="action-item bouncy" onclick="nav('withdraw.html')">
+                <div class="action-icon" style="color:var(--ios-red)"><i class="fa-solid fa-minus"></i></div>
+                <span style="font-size:12px; font-weight: 600;">Withdraw</span>
+            </div>
+            <div class="action-item bouncy" onclick="nav('history.html')">
+                <div class="action-icon" style="color:var(--ios-blue)"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <span style="font-size:12px; font-weight: 600;">History</span>
+            </div>
+        </div>
+
+        <div style="font-size: 20px; font-weight: 700; margin-bottom: 15px;" class="squish">Game Terminal</div>
+        
+        <div class="game-list">
+            <div class="game-row bouncy" onclick="handleGame('game.html')">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <div class="game-img" style="background: linear-gradient(135deg, #ff3b30, #5e0000);"><i class="fa-solid fa-plane-up"></i></div>
+                    <div><div style="font-weight:700;">Aviator</div><div style="font-size:12px; color:#8e8e93;">Real-time predictor</div></div>
+                </div>
+                <div style="background:#fff; color:#000; padding:8px 18px; border-radius:20px; font-weight:700; font-size:12px;">PLAY</div>
+            </div>
+
+            <div class="game-row bouncy" onclick="handleGame('mines.html')">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <div class="game-img" style="background: linear-gradient(135deg, #ffd60a, #856404);"><i class="fa-solid fa-bomb"></i></div>
+                    <div><div style="font-weight:700;">Mines</div><div style="font-size:12px; color:#8e8e93;">94% Accuracy</div></div>
+                </div>
+                <div style="background:#fff; color:#000; padding:8px 18px; border-radius:20px; font-weight:700; font-size:12px;">PLAY</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ios-modal" id="notif-panel">
+        <div class="ios-alert" style="width: 95%; max-width: 450px; text-align: left;">
+            <h3 style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                Notifications <i class="fa-solid fa-xmark bouncy" onclick="closeNotif()"></i>
+            </h3>
+            <div id="notif-list" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+            <p style="font-size: 10px; opacity: 0.4; text-align: center; margin-top: 10px;">Swipe left to remove</p>
+        </div>
+    </div>
+
+    <div class="ios-modal" id="confirmDeleteModal">
+        <div class="ios-alert">
+            <i class="fa-solid fa-trash-can" style="font-size: 2rem; color: var(--ios-red); margin-bottom:10px"></i>
+            <div style="font-weight:700;">Delete Notification?</div>
+            <p style="font-size:13px; color:#8e8e93; margin: 10px 0;">This will remove the message from your feed.</p>
+            <button class="alert-btn btn-danger bouncy" id="confirmDelBtn">Delete</button>
+            <button class="alert-btn btn-secondary bouncy" onclick="closeDelModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="ios-modal" id="lockModal">
+        <div class="ios-alert">
+            <div style="font-weight:700; font-size: 18px;">Access Restricted</div>
+            <p style="font-size:14px; color:#8e8e93; margin: 10px 0;">Login or sign up to enjoy full access and features.</p>
+            <button class="alert-btn btn-primary bouncy" onclick="closeLock()">Got it</button>
+        </div>
+    </div>
+
+    <div class="ios-modal" id="logoutModal">
+        <div class="ios-alert">
+            <div style="font-weight:700; font-size: 18px;">Sign Out?</div>
+            <p style="font-size:14px; color:#8e8e93; margin: 10px 0;">Are you sure you want to end your session?</p>
+            <button class="alert-btn btn-danger bouncy" onclick="confirmLogout()">Logout</button>
+            <button class="alert-btn btn-secondary bouncy" onclick="closeModal('logoutModal')">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        var _supa;
+        var userEmail = localStorage.getItem('user_email');
+        const CONFIG_ID = "f4c6da92-d822-4e30-8a93-b90c7df78390";
+        let startX = 0;
+        let pendingDeleteId = null;
+
+        window.onload = async function() {
+            _supa = getClient();
+            checkUserMode();
+            await checkMaintenance();
+            if(userEmail) {
+                loadData();
+                checkNotifications();
+                setInterval(loadData, 5000);
+                setInterval(checkNotifications, 10000);
+                setInterval(checkMaintenance, 15000);
+            }
+        };
+
+        async function checkMaintenance() {
+            const { data } = await _supa.from('system_config').select('maintenance_mode').eq('id', CONFIG_ID).maybeSingle();
+            const role = localStorage.getItem('user_role');
+            if (data && data.maintenance_mode === true && role !== 'ADMIN') {
+                const overlay = document.getElementById('m-overlay');
+                if (overlay.style.display !== 'flex') {
+                    overlay.style.display = 'flex';
+                    startMaintenanceTimer();
+                }
+            } else {
+                document.getElementById('m-overlay').style.display = 'none';
+            }
+        }
+
+        function startMaintenanceTimer() {
+            let timeLeft = 5;
+            const timerEl = document.getElementById('m-timer');
+            const interval = setInterval(() => {
+                timeLeft--;
+                if(timerEl) timerEl.innerText = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    location.href = 'maintain.html';
+                }
+            }, 1000);
+        }
+
+        function handleGlobalClick(e) {
+            const island = document.getElementById('island');
+            if (island && island.classList.contains('expanded')) {
+                island.classList.remove('expanded');
+            }
+        }
+
+        function checkUserMode() {
+            if(!userEmail) {
+                document.getElementById('guestBar').style.display = 'flex';
+                document.getElementById('balCard').style.display = 'none';
+                document.getElementById('mainActions').style.filter = 'grayscale(1) opacity(0.3)';
+                document.getElementById('island').classList.add('locked');
+            }
+        }
+
+        function toggleIsland() {
+            if(!userEmail) return;
+            document.getElementById('island').classList.toggle('expanded');
+        }
+
+        function handleProfileNav() {
+            if(!userEmail) {
+                document.getElementById('lockModal').style.display = 'flex';
+            } else {
+                location.href = 'profile.html';
+            }
+        }
+
+        async function loadData() {
+            const { data } = await _supa.from('profiles').select('*').eq('email', userEmail).single();
+            if(data) {
+                document.getElementById('balance').innerText = parseFloat(data.balance).toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('u-name').innerText = data.full_name || 'Pilot';
+                if(data.avatar_url) document.getElementById('u-avatar').src = data.avatar_url;
+                document.getElementById('admin-gate').style.display = (data.role === 'ADMIN') ? 'block' : 'none';
+                localStorage.setItem('user_id', data.id);
+                localStorage.setItem('user_role', data.role);
+            }
+        }
+
+        async function checkNotifications() {
+            const userId = localStorage.getItem('user_id');
+            const { data: readData } = await _supa.from('notification_reads').select('notification_id').eq('user_id', userId);
+            const readIds = readData ? readData.map(r => r.notification_id) : [];
+            const { data: allNotifs } = await _supa.from('notifications').select('id');
+            const unread = (allNotifs || []).filter(n => !readIds.includes(n.id));
+            document.getElementById('notif-dot').style.display = (unread.length > 0) ? 'block' : 'none';
+        }
+
+        async function openNotif() {
+            if(!userEmail) { document.getElementById('lockModal').style.display = 'flex'; return; }
+            const panel = document.getElementById('notif-panel');
+            panel.style.display = 'flex';
+            
+            const userId = localStorage.getItem('user_id');
+            const { data: readData } = await _supa.from('notification_reads').select('notification_id').eq('user_id', userId);
+            const readIds = readData ? readData.map(r => r.notification_id) : [];
+            
+            const { data: messages } = await _supa.from('notifications').select('*').order('created_at', { ascending: false });
+            const activeMessages = (messages || []).filter(m => !readIds.includes(m.id));
+
+            const list = document.getElementById('notif-list');
+            if(activeMessages.length === 0) {
+                list.innerHTML = '<p style="text-align:center; opacity:0.5; padding: 20px;">No new notifications</p>';
+                return;
+            }
+
+            list.innerHTML = activeMessages.map(n => `
+                <div class="notif-item bouncy" ontouchstart="hStart(event)" ontouchmove="hMove(event, this, '${n.id}')">
+                    <div style="font-size:10px; color:var(--ios-blue); font-weight:700; text-transform:uppercase;">SYSTEM ALERT</div>
+                    <div style="font-size:14px; margin-top:5px; white-space: pre-wrap; color: rgba(255,255,255,0.9); line-height: 1.4;">${n.message}</div>
+                    ${n.image_url ? `<img src="${n.image_url}" class="notif-img" onclick="showFullImage('${n.image_url}')">` : ''}
+                </div>
+            `).join('');
+        }
+
+        // SWIPE LOGIC
+        function hStart(e) { startX = e.touches[0].clientX; }
+        function hMove(e, el, id) {
+            let diff = e.touches[0].clientX - startX;
+            if(diff < 0) { // Swipe Left
+                el.style.transform = `translateX(${diff}px)`;
+                if(diff < -100) {
+                    pendingDeleteId = id;
+                    document.getElementById('confirmDeleteModal').style.display = 'flex';
+                    el.style.transform = 'translateX(0)';
+                }
+            }
+        }
+
+        document.getElementById('confirmDelBtn').onclick = async () => {
+            const userId = localStorage.getItem('user_id');
+            await _supa.from('notification_reads').insert([{ user_id: userId, notification_id: pendingDeleteId }]);
+            closeDelModal();
+            openNotif();
+            checkNotifications();
+        };
+
+        function showFullImage(url) {
+            document.getElementById('fullImgTarget').src = url;
+            document.getElementById('imageFullView').style.display = 'flex';
+        }
+
+        function closeDelModal() { document.getElementById('confirmDeleteModal').style.display = 'none'; pendingDeleteId = null; }
+        function showLogoutConfirm() { document.getElementById('logoutModal').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closeNotif() { document.getElementById('notif-panel').style.display = 'none'; }
+        function handleGame(url) { if(!userEmail) document.getElementById('lockModal').style.display = 'flex'; else location.href = url; }
+        function closeLock() { document.getElementById('lockModal').style.display = 'none'; }
+        function nav(url) { if(userEmail) location.href = url; }
+        function confirmLogout() { localStorage.clear(); location.href = 'login.html'; }
+    </script>
+</body>
+</html>

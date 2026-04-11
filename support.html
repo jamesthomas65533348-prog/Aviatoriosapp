@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Support - Aviator Genius</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --ios-blue: #007aff; 
+            --ios-bg: #000000;
+            --ios-card: #1c1c1e;
+            --ios-secondary: #2c2c2e;
+            --ios-grey: #8e8e93;
+            --ios-green: #34c759;
+            --bounce-transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+
+        body { 
+            margin: 0; padding: 0; min-height: 100vh; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif; 
+            color: white; background: var(--ios-bg);
+            overflow-x: hidden;
+        }
+
+        /* --- ADVANCED BOUNCY UTILITY --- */
+        .bouncy { 
+            transition: var(--bounce-transition), opacity 0.2s ease; 
+            cursor: pointer;
+            will-change: transform;
+        }
+        .bouncy:active { 
+            transform: scale(0.92); 
+            opacity: 0.7; 
+        }
+
+        /* --- HEADER --- */
+        .header { 
+            padding: 50px 20px 15px; display: flex; align-items: center;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(20px);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .back-btn { color: var(--ios-blue); font-size: 17px; font-weight: 400; display: flex; align-items: center; gap: 5px; }
+
+        .page-title { padding: 10px 20px 20px; font-size: 34px; font-weight: 700; letter-spacing: -1px; animation: slideDown 0.5s ease; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- IOS GROUPED LIST --- */
+        .section-label { padding: 0 35px 8px; font-size: 13px; color: var(--ios-grey); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .ios-list { 
+            background: var(--ios-card); border-radius: 12px; margin: 0 20px 25px;
+            overflow: hidden; border: 0.5px solid rgba(255,255,255,0.05);
+            animation: listPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes listPop {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .list-item {
+            display: flex; align-items: center; padding: 12px 16px;
+            gap: 15px; border-bottom: 0.5px solid rgba(255,255,255,0.1);
+        }
+        .list-item:last-child { border-bottom: none; }
+
+        .icon-box {
+            width: 30px; height: 30px; border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .item-label { flex-grow: 1; font-size: 17px; font-weight: 400; }
+        .item-value { color: var(--ios-grey); font-size: 15px; margin-right: 5px; }
+        .chevron { color: #3c3c3e; font-size: 14px; }
+
+        /* --- HERO CONTACT CARD --- */
+        .contact-hero {
+            background: linear-gradient(145deg, #1c1c1e, #0a0a0a);
+            margin: 0 20px 30px; border-radius: 20px; padding: 25px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(52, 199, 89, 0.1); color: var(--ios-green);
+            padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        .mail-text { font-size: 18px; font-weight: 600; margin-bottom: 22px; display: block; letter-spacing: -0.3px; color: #fff; }
+
+        .btn-blue {
+            background: var(--ios-blue); color: white; border: none;
+            width: 100%; padding: 16px; border-radius: 14px;
+            font-size: 17px; font-weight: 600; margin-bottom: 12px;
+            display: block;
+        }
+
+        /* --- SHEET MODAL --- */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; justify-content: center; align-items: flex-end;
+            z-index: 2000; backdrop-filter: blur(15px);
+        }
+        .sheet {
+            background: #1c1c1e; width: 100%; max-height: 85vh;
+            border-radius: 20px 20px 0 0; animation: iosSlideUp 0.45s cubic-bezier(0.3, 1, 0.4, 1);
+            display: flex; flex-direction: column;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        @keyframes iosSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .sheet-header { padding: 20px; border-bottom: 0.5px solid rgba(255,255,255,0.1); text-align: center; position: relative; }
+        .sheet-header h3 { margin: 0; font-size: 17px; font-weight: 600; }
+        .close-txt { position: absolute; right: 20px; top: 20px; color: var(--ios-blue); font-weight: 600; font-size: 17px; }
+
+        .sheet-body { padding: 25px; overflow-y: auto; color: #d1d1d6; font-size: 16px; line-height: 1.5; }
+        .sheet-body h4 { color: white; margin: 25px 0 10px; font-size: 18px; font-weight: 700; }
+
+        #toast {
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+            background: rgba(44, 44, 46, 0.95); color: white; padding: 14px 28px;
+            border-radius: 50px; font-size: 14px; font-weight: 500;
+            backdrop-filter: blur(10px); display: none; z-index: 3000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast">Copied to clipboard</div>
+
+    <div class="header">
+        <div class="back-btn bouncy" onclick="location.href='index.html'">
+            <i class="fa-solid fa-chevron-left"></i> Home
+        </div>
+    </div>
+
+    <div class="page-title">Support</div>
+
+    <div class="contact-hero">
+        <div class="status-badge"><i class="fa-solid fa-circle" style="font-size: 7px;"></i> Servers Operational</div>
+        <span class="mail-text" id="mail-link">gamingcollective25@gmail.com</span>
+        <button class="btn-blue bouncy" onclick="location.href='help.html'">Start Live Chat</button>
+        <button class="bouncy" onclick="copyMail()" style="background:none; border:none; color: var(--ios-blue); font-size: 15px; font-weight: 600; padding: 10px;">Copy Email Address</button>
+    </div>
+
+    <div class="section-label">Information</div>
+    <div class="ios-list">
+        <div class="list-item bouncy" onclick="showSheet('infoSheet')">
+            <div class="icon-box" style="background: #5856d6;"><i class="fa-solid fa-microchip"></i></div>
+            <div class="item-label">System Logs</div>
+            <i class="fa-solid fa-chevron-right chevron"></i>
+        </div>
+        <div class="list-item bouncy" onclick="showSheet('legalSheet')">
+            <div class="icon-box" style="background: #8e8e93;"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="item-label">Protocol & Privacy</div>
+            <i class="fa-solid fa-chevron-right chevron"></i>
+        </div>
+    </div>
+
+    <div class="section-label">Status</div>
+    <div class="ios-list" style="animation-delay: 0.1s;">
+        <div class="list-item bouncy">
+            <div class="icon-box" style="background: #ff9500;"><i class="fa-solid fa-signal"></i></div>
+            <div class="item-label">Latency</div>
+            <div class="item-value">24ms</div>
+        </div>
+        <div class="list-item bouncy">
+            <div class="icon-box" style="background: var(--ios-green);"><i class="fa-solid fa-check"></i></div>
+            <div class="item-label">Build Version</div>
+            <div class="item-value">4.2.0 (Stable)</div>
+        </div>
+    </div>
+
+    <div class="overlay" id="infoSheet">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h3>System Logs</h3>
+                <span class="close-txt bouncy" onclick="hideSheet('infoSheet')">Done</span>
+            </div>
+            <div class="sheet-body">
+                <h4>Global Relay</h4>
+                <p>Aviator Genius utilizes ultra-low latency relay servers to sync flight multipliers globally. Our architecture handles concurrent sessions with sub-50ms response times.</p>
+                <h4>Fair Outcome Engine</h4>
+                <p>Flight results are calculated via a cryptographically secure RNG. The result is mathematically determined at the start of the round.</p>
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="legalSheet">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h3>Rules & Protocol</h3>
+                <span class="close-txt bouncy" onclick="hideSheet('legalSheet')">Done</span>
+            </div>
+            <div class="sheet-body">
+                <h4>1. Identity</h4>
+                <p>Each user is restricted to one (1) operational account. Detecting multiple linked profiles will result in immediate termination.</p>
+                <h4>2. Withdrawals</h4>
+                <p>Withdrawals undergo a mandatory 1-24 hour security audit to verify flight legitimacy.</p>
+                <h4>3. Anti-Fraud</h4>
+                <p>The use of "Predictor Apps" or automation scripts is strictly forbidden. Accounts showing bot-like precision will be permanently blacklisted.</p>
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyMail() {
+            const email = document.getElementById('mail-link').innerText;
+            navigator.clipboard.writeText(email);
+            showToast("Copied to clipboard");
+        }
+
+        function showSheet(id) {
+            document.getElementById(id).style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideSheet(id) {
+            document.getElementById(id).style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        window.onclick = function(e) {
+            if (e.target.className === 'overlay') {
+                hideSheet(e.target.id);
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = "block";
+            setTimeout(() => t.style.display = "none", 2500);
+        }
+    </script>
+</body>
+</html>
