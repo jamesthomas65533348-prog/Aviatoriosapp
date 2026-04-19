@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Aviator Genius - iOS Live</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --ios-bg: #000000;
+            --ios-card: rgba(28, 28, 30, 0.6);
+            --ios-blue: #0A84FF;
+            --ios-green: #32D74B;
+            --ios-red: #FF453A;
+            --ios-text: #FFFFFF;
+            --snap-bounce: cubic-bezier(0.32, 2, 0.55, 0.27);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- GLOBAL BOUNCY EFFECT --- */
+        .bouncy { transition: transform 0.2s var(--snap-bounce); }
+        .bouncy:active { transform: scale(0.92); }
+
+        /* --- DYNAMIC ISLAND GROUP --- */
+        .island-container {
+            position: fixed;
+            top: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 9999;
+        }
+
+        .dynamic-island {
+            background: #000;
+            min-width: 170px;
+            height: 38px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 18px;
+            transition: all 0.6s var(--snap-bounce), border 0.3s;
+            cursor: pointer;
+            border: 0.8px solid rgba(255,255,255,0.25);
+            box-shadow: 0 0 15px rgba(255,255,255,0.03);
+            position: relative;
+        }
+
+        .dynamic-island.expanded {
+            height: 95px;
+            min-width: 310px;
+            border-radius: 42px;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .led-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 12px;
+            transition: 0.4s;
+        }
+
+        .active-red .led-indicator {
+            background: var(--ios-red);
+            box-shadow: 0 0 15px var(--ios-red);
+            animation: led-pulse 2s infinite;
+        }
+
+        .active-green .led-indicator {
+            background: var(--ios-green);
+            box-shadow: 0 0 15px var(--ios-green);
+        }
+
+        @keyframes led-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+        .island-label { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; }
+        .island-detail {
+            display: none; font-size: 11px; color: #8e8e93;
+            margin-top: 8px; line-height: 1.4; text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .expanded .island-detail { display: block; }
+
+        /* --- MODERN SIDE BUBBLE --- */
+        .mini-bubble {
+            width: 0; height: 38px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: all 0.6s var(--snap-bounce);
+            cursor: pointer;
+            border: 0.8px solid rgba(255,255,255,0.25);
+        }
+
+        .mini-bubble.show { width: 38px; opacity: 1; }
+        .mini-bubble i { color: var(--ios-green); font-size: 14px; filter: drop-shadow(0 0 5px var(--ios-green)); }
+
+        /* --- CONTENT & WIDGETS --- */
+        .hero { text-align: center; max-width: 340px; margin-bottom: 40px; transition: 0.5s var(--snap-bounce); }
+        .hero h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; letter-spacing: -1px; }
+        .hero p { color: #8e8e93; font-size: 17px; line-height: 1.4; transition: 0.3s; }
+
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .widget {
+            background: var(--ios-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 22px;
+            padding: 20px;
+            border: 0.5px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            cursor: default;
+        }
+
+        .widget i { font-size: 20px; color: var(--ios-blue); transition: 0.3s; }
+        .widget span { font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; }
+        .widget div { font-size: 15px; font-weight: 600; }
+
+        .full-width { grid-column: span 2; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="island-container">
+        <div id="island" class="dynamic-island active-red bouncy" onclick="toggleIsland()">
+            <div style="display: flex; align-items: center;">
+                <div class="led-indicator"></div>
+                <span id="island-label" class="island-label">System Locked</span>
+            </div>
+            <div id="island-detail" class="island-detail">
+                Security Protocol: Level 4 <br> Encrypting Packets...
+            </div>
+        </div>
+
+        <div id="side-button" class="mini-bubble bouncy" onclick="location.href='index.html'">
+            <i class="fa-solid fa-play"></i>
+        </div>
+    </div>
+
+    <div class="hero bouncy">
+        <h1 id="main-title">Maintenance</h1>
+        <p id="main-desc">We are upgrading our core infrastructure. Please check back shortly.</p>
+    </div>
+
+    <div class="widget-grid">
+        <div class="widget bouncy">
+            <i class="fa-solid fa-server" id="icon-server"></i>
+            <span>Server</span>
+            <div id="w-server" style="color: var(--ios-red)">Offline</div>
+        </div>
+        <div class="widget bouncy">
+            <i class="fa-solid fa-shield-check" style="color: var(--ios-green)"></i>
+            <span>Security</span>
+            <div>Active</div>
+        </div>
+        <div class="widget full-width bouncy">
+            <i class="fa-solid fa-database" style="color: var(--ios-blue)"></i>
+            <span>Database Integrity</span>
+            <div id="w-db">Optimizing Assets...</div>
+        </div>
+    </div>
+
+    <script>
+        var _supa;
+        const CONFIG_ID = "f4c6da92-d822-4e30-8a93-b90c7df78390";
+        let isExpanded = false;
+
+        function toggleIsland() {
+            const island = document.getElementById('island');
+            isExpanded = !isExpanded;
+            island.classList.toggle('expanded', isExpanded);
+        }
+
+        window.onload = async function() {
+            try {
+                _supa = getClient();
+                checkLiveStatus();
+                setInterval(checkLiveStatus, 5000);
+            } catch (e) { console.error("Cloud Error"); }
+        };
+
+        async function checkLiveStatus() {
+            const { data } = await _supa.from('system_config').select('maintenance_mode').eq('id', CONFIG_ID).maybeSingle();
+            
+            const island = document.getElementById('island');
+            const label = document.getElementById('island-label');
+            const sideBtn = document.getElementById('side-button');
+            const mTitle = document.getElementById('main-title');
+            const mDesc = document.getElementById('main-desc');
+            const wServer = document.getElementById('w-server');
+            const iServer = document.getElementById('icon-server');
+            const wDb = document.getElementById('w-db');
+            const iDetail = document.getElementById('island-detail');
+
+            if (data && data.maintenance_mode === false) {
+                // LIVE STATE
+                island.classList.replace('active-red', 'active-green');
+                label.innerText = "System Online";
+                sideBtn.classList.add('show');
+                
+                // Content Change
+                mTitle.innerText = "Systems Live";
+                mDesc.innerText = "All upgrades complete. You can now proceed to the terminal.";
+                mDesc.style.color = "var(--ios-green)";
+                
+                // Widget Update
+                wServer.innerText = "Online";
+                wServer.style.color = "var(--ios-green)";
+                iServer.style.color = "var(--ios-green)";
+                wDb.innerText = "Synchronized";
+                iDetail.innerHTML = "Security Protocol: Level 4 <br> Connection: Established";
+            } else {
+                // MAINTENANCE STATE
+                island.classList.replace('active-green', 'active-red');
+                label.innerText = "System Locked";
+                sideBtn.classList.remove('show');
+                
+                // Content Change
+                mTitle.innerText = "Maintenance";
+                mDesc.innerText = "We are upgrading our core infrastructure. Please check back shortly.";
+                mDesc.style.color = "#8e8e93";
+                
+                // Widget Update
+                wServer.innerText = "Offline";
+                wServer.style.color = "var(--ios-red)";
+                iServer.style.color = "var(--ios-blue)";
+                wDb.innerText = "Optimizing Assets...";
+                iDetail.innerHTML = "Security Protocol: Level 4 <br> Encrypting Packets...";
+            }
+        }
+    </script>
+</body>
+</html>
